@@ -37,15 +37,75 @@ def retrieve_phone_code(driver) -> str:
 class UrbanRoutesPage:
     from_field = (By.ID, 'from')
     to_field = (By.ID, 'to')
+    comfort_button = (By.XPATH, "//*[contains(text(),'Comfort')]")
+    order_taxi_button = (By.XPATH, "//*[contains(text(),'Pedir un taxi')]")
+
+    phone_button = (By.XPATH, "//div[contains(text(),'Número de teléfono')]")
+    phone_input = (By.ID, "phone")
+    phone_confirm_button = (By.XPATH, "//button[contains(text(),'Siguiente')]")
+    code_confirm_button = (By.XPATH, "//button[contains(text(),'Confirmar')]")
+    code_input = (By.ID, "code")
 
     def __init__(self, driver):
         self.driver = driver
 
+    def select_comfort(self):
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(self.comfort_button)
+        )
+        self.driver.find_element(*self.comfort_button).click()
+
+    def click_order_taxi(self):
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(self.order_taxi_button)
+        )
+        self.driver.find_element(*self.order_taxi_button).click()
+
+    def add_phone(self, phone):
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(self.phone_button)
+        )
+
+        self.driver.find_element(*self.phone_button).click()
+
+        self.driver.find_element(*self.phone_input).send_keys(phone)
+
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(self.phone_confirm_button)
+        )
+
+        self.driver.find_element(*self.phone_confirm_button).click()
+
+    def enter_phone_code(self):
+        code = retrieve_phone_code(self.driver)
+
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.visibility_of_element_located(self.code_input)
+        )
+
+        self.driver.find_element(*self.code_input).send_keys(code)
+
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(self.code_confirm_button)
+        )
+
+        self.driver.find_element(*self.code_confirm_button).click()
+
     def set_from(self, from_address):
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.visibility_of_element_located(self.from_field)
+        )
         self.driver.find_element(*self.from_field).send_keys(from_address)
 
     def set_to(self, to_address):
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.visibility_of_element_located(self.to_field)
+        )
         self.driver.find_element(*self.to_field).send_keys(to_address)
+
+    def set_route(self, from_address, to_address):
+        self.set_from(from_address)
+        self.set_to(to_address)
 
     def get_from(self):
         return self.driver.find_element(*self.from_field).get_property('value')
@@ -61,11 +121,12 @@ class TestUrbanRoutes:
 
     @classmethod
     def setup_class(cls):
-        # no lo modifiques, ya que necesitamos un registro adicional habilitado para recuperar el código de confirmación del teléfono
-        from selenium.webdriver import DesiredCapabilities
-        capabilities = DesiredCapabilities.CHROME
-        capabilities["goog:loggingPrefs"] = {'performance': 'ALL'}
-        cls.driver = webdriver.Chrome(desired_capabilities=capabilities)
+        from selenium.webdriver.chrome.options import Options
+
+        options = Options()
+        options.set_capability("goog:loggingPrefs", {'performance': 'ALL'})
+
+        cls.driver = webdriver.Chrome(options=options)
 
     def test_set_route(self):
         self.driver.get(data.urban_routes_url)
@@ -76,6 +137,23 @@ class TestUrbanRoutes:
         assert routes_page.get_from() == address_from
         assert routes_page.get_to() == address_to
 
+    def test_select_comfort(self):
+        self.driver.get(data.urban_routes_url)
+
+        routes_page = UrbanRoutesPage(self.driver)
+
+        routes_page.set_route(
+            data.address_from,
+            data.address_to
+        )
+
+        routes_page.click_order_taxi()
+
+        routes_page.select_comfort()
+
+        routes_page.add_phone(data.phone_number)
+
+        routes_page.enter_phone_code()
 
     @classmethod
     def teardown_class(cls):
