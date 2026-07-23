@@ -39,6 +39,11 @@ class UrbanRoutesPage:
     to_field = (By.ID, 'to')
     comfort_button = (By.XPATH, "//*[contains(text(),'Comfort')]")
     order_taxi_button = (By.XPATH, "//*[contains(text(),'Pedir un taxi')]")
+    payment_button = (By.XPATH, "//div[@class='pp-text' and contains(text(),'Método de pago')]")
+    add_card_button = (By.XPATH, "//*[contains(text(),'Agregar una tarjeta')]")
+    card_number_input = (By.ID, "number")
+    card_code_input = (By.ID, "code")
+    link_card_button = (By.XPATH, "//*[contains(text(),'Vincular')]")
 
     phone_button = (By.XPATH, "//div[contains(text(),'Número de teléfono')]")
     phone_input = (By.ID, "phone")
@@ -91,15 +96,40 @@ class UrbanRoutesPage:
 
         self.driver.find_element(*self.code_confirm_button).click()
 
-    def set_from(self, from_address):
+    def click_payment_method(self):
         WebDriverWait(self.driver, 10).until(
-            expected_conditions.visibility_of_element_located(self.from_field)
+            expected_conditions.element_to_be_clickable(self.payment_button)
+        )
+
+        self.driver.find_element(*self.payment_button).click()
+
+    def add_card(self, card_number, card_code):
+        self.click_payment_method()
+
+        import time
+        time.sleep(2)
+
+        elements = self.driver.find_elements(
+            By.XPATH,
+            "//*[contains(text(),'Agregar una tarjeta')]"
+        )
+
+        for element in elements:
+            print("TAG:", element.tag_name)
+            print("TEXTO:", element.text)
+            print("VISIBLE:", element.is_displayed())
+            print("CLASE:", element.get_attribute("class"))
+            print("----------------")
+
+    def set_from(self, from_address):
+        WebDriverWait(self.driver, 20).until(
+            expected_conditions.element_to_be_clickable(self.from_field)
         )
         self.driver.find_element(*self.from_field).send_keys(from_address)
 
     def set_to(self, to_address):
-        WebDriverWait(self.driver, 10).until(
-            expected_conditions.visibility_of_element_located(self.to_field)
+        WebDriverWait(self.driver, 20).until(
+            expected_conditions.element_to_be_clickable(self.to_field)
         )
         self.driver.find_element(*self.to_field).send_keys(to_address)
 
@@ -154,6 +184,11 @@ class TestUrbanRoutes:
         routes_page.add_phone(data.phone_number)
 
         routes_page.enter_phone_code()
+
+        routes_page.add_card(
+            data.card_number,
+            data.card_code
+        )
 
     @classmethod
     def teardown_class(cls):
