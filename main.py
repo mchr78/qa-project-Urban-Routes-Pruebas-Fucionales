@@ -40,10 +40,14 @@ class UrbanRoutesPage:
     comfort_button = (By.XPATH, "//*[contains(text(),'Comfort')]")
     order_taxi_button = (By.XPATH, "//*[contains(text(),'Pedir un taxi')]")
     payment_button = (By.XPATH, "//div[@class='pp-text' and contains(text(),'Método de pago')]")
-    add_card_button = (By.XPATH, "//*[contains(text(),'Agregar una tarjeta')]")
+    card_payment_option = (By.XPATH, "//div[contains(text(),'Tarjeta')]")
+    add_card_button = (By.XPATH, "//*[contains(text(),'Agregar tarjeta')]")
     card_number_input = (By.ID, "number")
-    card_code_input = (By.ID, "code")
+    card_code_input = (By.XPATH, "//input[@id='code' and @class='card-input']")
     link_card_button = (By.XPATH, "//*[contains(text(),'Vincular')]")
+    message_input = (By.ID, "comment")
+    blanket_checkbox = (By.XPATH, "//*[contains(text(),'Manta y pañuelos')]")
+    ice_cream_plus_button = (By.XPATH, "//div[contains(text(),'Helado')]/following::div[contains(@class,'counter-plus')][1]")
 
     phone_button = (By.XPATH, "//div[contains(text(),'Número de teléfono')]")
     phone_input = (By.ID, "phone")
@@ -104,22 +108,84 @@ class UrbanRoutesPage:
         self.driver.find_element(*self.payment_button).click()
 
     def add_card(self, card_number, card_code):
+        # Abrir Método de pago
         self.click_payment_method()
+
+        # Esperar botón Agregar una tarjeta
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(
+                self.add_card_button
+            )
+        )
+
+        self.driver.find_element(
+            *self.add_card_button
+        ).click()
 
         import time
         time.sleep(2)
 
-        elements = self.driver.find_elements(
-            By.XPATH,
-            "//*[contains(text(),'Agregar una tarjeta')]"
+        inputs = self.driver.find_elements(By.TAG_NAME, "input")
+
+        for i in inputs:
+            print(
+                "INPUT:",
+                i.get_attribute("id"),
+                "CLASS:",
+                i.get_attribute("class"),
+                "VISIBLE:",
+                i.is_displayed()
+            )
+
+    def add_message(self, message):
+        WebDriverWait(self.driver, 10).until(
+            expected_conditions.visibility_of_element_located(
+                self.message_input
+            )
         )
 
-        for element in elements:
-            print("TAG:", element.tag_name)
-            print("TEXTO:", element.text)
-            print("VISIBLE:", element.is_displayed())
-            print("CLASE:", element.get_attribute("class"))
-            print("----------------")
+        self.driver.find_element(
+            *self.message_input
+        ).send_keys(message)
+
+    def select_blanket(self):
+        blanket = WebDriverWait(self.driver, 10).until(
+            expected_conditions.presence_of_element_located(
+                self.blanket_checkbox
+            )
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});",
+            blanket
+        )
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            blanket
+        )
+
+    def add_ice_cream(self):
+        button = WebDriverWait(self.driver, 10).until(
+            expected_conditions.element_to_be_clickable(
+                self.ice_cream_plus_button
+            )
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});",
+            button
+        )
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            button
+        )
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            button
+        )
 
     def set_from(self, from_address):
         WebDriverWait(self.driver, 20).until(
@@ -189,6 +255,14 @@ class TestUrbanRoutes:
             data.card_number,
             data.card_code
         )
+
+        routes_page.add_message(
+            data.message_for_driver
+        )
+
+        routes_page.select_blanket()
+
+        routes_page.add_ice_cream()
 
     @classmethod
     def teardown_class(cls):
