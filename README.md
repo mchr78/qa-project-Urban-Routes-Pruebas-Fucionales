@@ -10,7 +10,7 @@ Urban Routes es una aplicación de transporte en la que los usuarios reservan un
 - Ejecuté pruebas funcionales y de regresión en diferentes navegadores y resoluciones.
 - Detecté y documenté bug durante las pruebas.
 
-## Herramientas y Técnicas:
+## Herramientas y Técnicas
 - Jira
 - Draw.io
 - Casos de prueba
